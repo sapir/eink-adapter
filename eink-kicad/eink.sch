@@ -37,7 +37,7 @@ $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 1
 Title ""
-Date "24 sep 2015"
+Date "5 oct 2015"
 Rev ""
 Comp ""
 Comment1 ""
@@ -1534,4 +1534,33 @@ F 3 "" H 9050 4500 60  0000 C CNN
 	1    9050 4500
 	1    0    0    -1  
 $EndComp
+$Comp
+L LM358 U4
+U 2 1 5612EA1F
+P 5050 6450
+F 0 "U4" H 5000 6650 60  0000 L CNN
+F 1 "LM358" H 5000 6200 60  0000 L CNN
+F 2 "" H 5050 6450 60  0000 C CNN
+F 3 "" H 5050 6450 60  0000 C CNN
+	2    5050 6450
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	4550 6550 4550 7250
+Wire Wire Line
+	4550 7250 5550 7250
+Wire Wire Line
+	5550 7250 5550 6450
+Text Label 4950 7100 0    60   ~ 0
+-15V
+Text Label 4950 5750 0    60   ~ 0
++15V
+Wire Wire Line
+	4550 6350 4050 6350
+Text Label 4050 6350 0    60   ~ 0
+GND
+Wire Wire Line
+	4950 6050 4950 5750
+Wire Wire Line
+	4950 6850 4950 7100
 $EndSCHEMATC
