@@ -1,4 +1,4 @@
-update=IDT 02:50:09 2015 ספט 17 ה'
+update=IDT 01:12:26 2015 אוק 18 א'
 version=1
 last_client=pcbnew
 [general]
@@ -51,11 +51,11 @@ EquName1=devcms
 [pcbnew]
 version=1
 LastNetListRead=eink.net
-UseCmpFile=1
+UseCmpFile=0
 PadDrill=0.000000000000
 PadDrillOvalY=0.000000000000
-PadSizeH=0.800100000000
-PadSizeV=1.000760000000
+PadSizeH=0.381000000000
+PadSizeV=1.270000000000
 PcbTextSizeV=1.500000000000
 PcbTextSizeH=1.500000000000
 PcbTextThickness=0.300000000000
