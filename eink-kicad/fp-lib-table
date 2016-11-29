@@ -1,0 +1,3 @@
+(fp_lib_table
+  (lib (name eink-footprints)(type KiCad)(uri "$(KIPRJMOD)/eink-footprints.pretty")(options "")(descr ""))
+)
