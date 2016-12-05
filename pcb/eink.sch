@@ -31,7 +31,7 @@ LIBS:contrib
 LIBS:valves
 LIBS:eink-lib
 LIBS:eink-cache
-EELAYER 25 0
+EELAYER 26 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -461,7 +461,7 @@ NOTE: sm: 100uF; es: no cap
 Text Label 6650 4950 2    60   ~ 0
 NOTE: 7xL15 output components - es: 10K, 4.7uF; sm: 39K? 3.9K?, 0.1uF?
 $Comp
-L POT RV1
+L POT-RESCUE-eink RV1
 U 1 1 55F882B6
 P 7300 1300
 F 0 "RV1" H 7300 1200 50  0000 C CNN
