@@ -372,7 +372,7 @@ $EndComp
 Text Label 7350 7550 0    60   ~ 0
 ED060SC4 power and breakout board
 Text Label 10650 7650 0    60   ~ 0
-1
+2
 $Comp
 L LM358-RESCUE-eink U2
 U 2 1 55E2882E

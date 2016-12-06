@@ -1,4 +1,4 @@
-update=IST 23:56:51 2016 דצמ 05 ב'
+update=IST 02:16:20 2016 דצמ 06 ג'
 version=1
 last_client=kicad
 [general]
