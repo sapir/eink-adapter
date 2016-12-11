@@ -53,8 +53,8 @@ enum WAVEFORM {
 
 enum PIXEL_VALUE {
     PV_NEUTRAL = 0,
-    PV_BLACK,
-    PV_WHITE,
+    PV_BLACK, // +15V
+    PV_WHITE, // -15V
     PV_HIZ,
 };
 
