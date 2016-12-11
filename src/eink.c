@@ -10,11 +10,17 @@
 // SPI used for shift register
 #define SR_SPI 1
 
+
 // pins not included in shift registers:
 #define PIN_SR_N_OE     PIN_D4      // shift register not-output-enable
 #define PIN_CL          PIN_D2      // horizontal clock
 // PIN_D1 conflicts with SPI-?
 #define PIN_OE          PIN_D3      // display output enable
+// SPI pins:
+//      SRCLK           PIN_D5      // GPIO14
+//      DATA            PIN_D7      // GPIO13
+//      LATCH           PIN_D8      // GPIO15
+
 
 // control bits: (low bits belong to shift register, top bits use extra pins)
 #define BIT_SMPS        (1<<0)      // SMPS enable, active low
