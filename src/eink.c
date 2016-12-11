@@ -69,37 +69,59 @@ enum PIXEL_VALUE {
 // TODO: does the old pixel value really matter?
 
 struct waveform_stage {
-    unsigned int length_us;
+    uint32_t ckv_high_delay;
+    uint32_t ckv_low_delay;
     enum PIXEL_VALUE values[NUM_WAVEFORMS];
 };
 
 static const struct waveform_stage refresh_waveforms[] = {
-//    (us)     W->W        W->B        B->W        B->B
-    {   20, { PV_NEUTRAL, PV_BLACK,  PV_WHITE,   PV_NEUTRAL } },
-    {  120, { PV_NEUTRAL, PV_WHITE,  PV_BLACK,   PV_NEUTRAL } },
-    {  100, { PV_NEUTRAL, PV_BLACK,  PV_WHITE,   PV_NEUTRAL } },
+//      (ns)   (ns)     (unused)     W->B        B->W       (unused)
+    {  60*10, 60*40, { PV_NEUTRAL, PV_BLACK,  PV_WHITE,   PV_NEUTRAL } },
+    {  60*60, 60*40, { PV_NEUTRAL, PV_WHITE,  PV_BLACK,   PV_NEUTRAL } },
+    {  60*50, 60*40, { PV_NEUTRAL, PV_BLACK,  PV_WHITE,   PV_NEUTRAL } },
 
     // null stage to signify end of waveform
-    {  0, {} },
+    {  0, 0, {} },
 };
 
 static const struct waveform_stage normal_waveforms[] = {
-//    (us)     W->W        W->B        B->W        B->B
-    {    8, { PV_BLACK,   PV_NEUTRAL, PV_NEUTRAL, PV_WHITE,   } },
-    {   12, { PV_BLACK,   PV_BLACK,   PV_WHITE,   PV_WHITE,   } },
-    {   20, { PV_WHITE,   PV_WHITE,   PV_BLACK,   PV_BLACK,   } },
-    {    8, { PV_NEUTRAL, PV_BLACK,   PV_WHITE,   PV_NEUTRAL, } },
+//      (ns)   (ns)      W->W        W->B        B->W        B->B
+    {  60*20, 60*40, { PV_BLACK,   PV_HIZ,     PV_HIZ,     PV_WHITE,   } },
+    {  60*40, 60*40, { PV_BLACK,   PV_BLACK,   PV_WHITE,   PV_WHITE,   } },
+    {  60*60, 60*40, { PV_WHITE,   PV_WHITE,   PV_BLACK,   PV_BLACK,   } },
+    {  60*20, 60*40, { PV_HIZ,     PV_BLACK,   PV_WHITE,   PV_HIZ,     } },
 
     // null stage to signify end of waveform
-    {  0, {} },
+    {  0, 0, {} },
 };
 
 
-static void delay_ms(int ms)
+static void delay_ms(uint32_t ms)
 {
     for (int i = 0; i < ms; ++i) {
         sdk_os_delay_us(1000);
     }
+}
+
+static void delay_us(uint32_t us)
+{
+    delay_ms(us / 1000);
+    sdk_os_delay_us(us % 1000);
+}
+
+// TODO: only good for 50ns+, and ignores function call time
+static inline void delay_25ns_steps(int steps)
+{
+    // at 80MHz, each cycle is 12.5ns, so 2 cycles are 25ns (1 step).
+    // TODO: this naively assumes that each instruction is 1 cycle.
+    register int i;
+    __asm__ __volatile__ (
+            "nop\n"
+            "addi  %0, %1, -1\n"
+        "0:\n"
+            "addi  %0, %0, -1\n"
+            "bgez  %0, 0b\n"
+        : "=r"(i) : "r"(steps));
 }
 
 
@@ -137,7 +159,7 @@ static inline void low(uint16_t pins)
         update_extra();
 }
 
-static void high(uint16_t pins)
+static inline void high(uint16_t pins)
 {
     eink_ctl |= pins;
     if (pins & SR_BITS_MASK)
@@ -153,13 +175,13 @@ void eink_power_on(void)
     eink_ctl = 0;
     update_ctl();
 
-    sdk_os_delay_us(100);
+    delay_us(100);
     high(BIT_VNEG);
 
-    sdk_os_delay_us(1000);
+    delay_us(1000);
     high(BIT_VPOS);
 
-    sdk_os_delay_us(10);
+    delay_us(10);
     high(BIT_SPV|BIT_SPH);
 }
 
@@ -190,7 +212,7 @@ static void hclk(int n)
 
 static void hscan_start(void)
 {
-    hclk(2);
+    high(BIT_OE);
     low(BIT_SPH);
 }
 
@@ -207,81 +229,72 @@ static void data_write(uint8_t b)
 static void hscan_stop(void)
 {
     high(BIT_SPH);
-
-    hclk(1);
-
-    high(BIT_LE);
-    sdk_os_delay_us(1);
-    low(BIT_LE);
-    sdk_os_delay_us(1);
+    hclk(2);
 }
 
-static void hscan_solid_row(int p)
+static void hscan_solid_row(int pixel_val)
 {
-    data_write(QUAD_PIXEL_VALUE(p));
+    data_write(QUAD_PIXEL_VALUE(pixel_val));
     hscan_start();
     hclk(SCREEN_WIDTH/PVS_PER_IO_BYTE);
     hscan_stop();
 }
 
 
-static void vclk(void)
+static void vclk(int n)
 {
-    high(BIT_CKV);
-    sdk_os_delay_us(1);
-    low(BIT_CKV);
+    for (int i = 0; i < n; ++i) {
+        low(BIT_CKV);
+        delay_25ns_steps(60*20);
+        high(BIT_CKV);
+        delay_25ns_steps(60*20);
+    }
 }
 
-static void vscan_write(uint16_t delay)
+// delays in nanoseconds
+static void vscan_write(uint32_t ckv_high_delay, uint32_t ckv_low_delay)
 {
-    // TODO: combine delay with write time
-    // TODO: try overlapping delays of different rows using PV_HIZ
+    high(BIT_LE);
+    hclk(2);
+    low(BIT_LE);
+    hclk(2);
 
-    low(BIT_CKV);
-    sdk_os_delay_us(1);
-    high(BIT_OE);
-    sdk_os_delay_us(delay);
+    uint32_t high_steps = (ckv_high_delay + 24) / 25;
+    uint32_t low_steps = (ckv_low_delay + 24) / 25;
+
     high(BIT_CKV);
-    sdk_os_delay_us(1);
+    delay_25ns_steps(high_steps);
+    low(BIT_CKV);
+    delay_25ns_steps(low_steps);
     low(BIT_OE);
-    sdk_os_delay_us(1);
 
-    vclk();
+    hclk(2);
 }
+
 
 static void vscan_start(void)
 {
-    eink_ctl |= (BIT_GMODE|BIT_CKV);
-    eink_ctl &= ~(BIT_LE);
-    update_ctl();
-    sdk_os_delay_us(1000);
-    high(BIT_SPV);
-    sdk_os_delay_us(500);
-    low(BIT_SPV);
-    sdk_os_delay_us(1);
-    low(BIT_CKV);
-    sdk_os_delay_us(25);
-    high(BIT_CKV);
-    sdk_os_delay_us(1);
-    high(BIT_SPV);
+    high(BIT_GMODE);
+    delay_us(1000);
 
-    for (int i = 0; i < 3; ++i) {
-        sdk_os_delay_us(25);
-        vclk();
-    }
+    high(BIT_SPV);
+    vclk(2);
+    low(BIT_SPV);
+    vclk(2);
+    high(BIT_SPV);
+    vclk(2);
 }
 
 static void vscan_stop(void)
 {
-    for (int i = 0; i < 8; ++i) {
-        vclk();
-    }
+    hscan_solid_row(PV_NEUTRAL);
+    vscan_write(100, 100);
 
-    low(BIT_CKV);
-    sdk_os_delay_us(3000);
+    delay_us(1);
+    low(BIT_CKV|BIT_OE);
+    delay_us(3000);
     high(BIT_CKV);
-    sdk_os_delay_us(430);
-    low(BIT_GMODE|BIT_OE);
+    delay_us(430);
     low(BIT_CKV);
 }
 
@@ -336,7 +349,7 @@ bool eink_update(get_rows_cb_t get_rows_cb, void *cb_arg,
     uint8_t old_row[MAX_BITMAP_ROW_SIZE] = {};
     uint8_t new_row[MAX_BITMAP_ROW_SIZE] = {};
 
-    for (int wf_stage = 0; waveforms[wf_stage].length_us > 0 && !stopped; ++wf_stage) {
+    for (int wf_stage = 0; waveforms[wf_stage].ckv_high_delay > 0 && !stopped; ++wf_stage) {
         const struct waveform_stage *cur_stage = &waveforms[wf_stage];
 
         vscan_start();
@@ -345,9 +358,10 @@ bool eink_update(get_rows_cb_t get_rows_cb, void *cb_arg,
 
         if (y < y0) {
             for (; y < y0; ++y) {
-                vclk();
+                vclk(1);
             }
         }
+
 
         for (; y < y1; ++y) {
             if (!get_rows_cb(cb_arg, y, x0, x1, old_row, new_row)) {
@@ -357,16 +371,17 @@ bool eink_update(get_rows_cb_t get_rows_cb, void *cb_arg,
 
             do_row_update_stage(x0, x1, old_row, new_row, cur_stage);
 
-            // TODO
-            vscan_write(cur_stage->length_us);
-                    // progress if next stage is last stage
-                    // waveforms[wf_stage + 1].length_us == 0);
+            vscan_write(cur_stage->ckv_high_delay, cur_stage->ckv_low_delay);
         }
 
         if (y < SCREEN_HEIGHT) {
-            for (; y < SCREEN_HEIGHT; ++y) {
-                vclk();
-            }
+            // clean output
+            hscan_solid_row(PV_NEUTRAL);
+            vscan_write(100, 100);
+            ++y;
+
+            // don't bother vclking to the end of the screen, just
+            // end the scan
         }
 
         vscan_stop();
@@ -387,17 +402,15 @@ void eink_refresh(pixel_t pixel)
 
     const struct waveform_stage *waveforms = refresh_waveforms;
 
-    for (int wf_stage = 0; waveforms[wf_stage].length_us > 0; ++wf_stage) {
-        vscan_start();
-
+    for (int wf_stage = 0; waveforms[wf_stage].ckv_high_delay > 0; ++wf_stage) {
         const struct waveform_stage *cur_stage = &waveforms[wf_stage];
+
+        vscan_start();
 
         for (int y = 0; y < SCREEN_HEIGHT; ++y) {
             hscan_solid_row(cur_stage->values[wf_idx]);
-            vscan_write(cur_stage->length_us);
+            vscan_write(cur_stage->ckv_high_delay, cur_stage->ckv_low_delay);
         }
-
-        sdk_os_delay_us(400);
 
         vscan_stop();
     }
