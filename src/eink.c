@@ -18,6 +18,7 @@
 #define PIN_CL          PIN_D2      // horizontal clock
 // PIN_D1 conflicts with SPI-?
 #define PIN_OE          PIN_D3      // display output enable
+#define PIN_CKV         PIN_D6
 // SPI pins:
 //      SRCLK           PIN_D5      // GPIO14
 //      DATA            PIN_D7      // GPIO13
@@ -30,13 +31,14 @@
 #define BIT_VPOS        (1<<2)      // +22V/+15V enable, active high
 #define BIT_GMODE       (1<<3)      // GMODE, actually a 2-bit value but we
                                         // tied the 2 bits. 00 is off, 11 is on
-#define BIT_CKV         (1<<4)      // vertical clock
 #define BIT_SPV         (1<<5)      // start pulse vertical, active low
 #define BIT_SPH         (1<<6)      // start pulse horizontal, active low
 #define BIT_LE          (1<<7)      // source (horiz.) driver latch enable
 #define BIT_CL          (1<<8)      // horizontal clock
 #define BIT_OE          (1<<9)      // source (horiz.) driver output enable
                                         // (active high + CKV must be high?)
+#define BIT_CKV         (1<<10)     // vertical clock
+
 #define SR_BITS_MASK    0x00ff
 #define EXTRA_BITS_MASK 0xff00
 
@@ -101,6 +103,7 @@ static void update_extra(void)
 {
     gpio_write(PIN_CL, (eink_ctl & BIT_CL) ? 1 : 0);
     gpio_write(PIN_OE, (eink_ctl & BIT_OE) ? 1 : 0);
+    gpio_write(PIN_CKV, (eink_ctl & BIT_CKV) ? 1 : 0);
 }
 
 static void update_ctl(void)
@@ -397,6 +400,7 @@ bool eink_setup(void)
     gpio_enable(PIN_SR_N_OE, GPIO_OUTPUT);
     gpio_enable(PIN_CL, GPIO_OUTPUT);
     gpio_enable(PIN_OE, GPIO_OUTPUT);
+    gpio_enable(PIN_CKV, GPIO_OUTPUT);
 
     // initialize SR value to turning screen off, then enable the SR output
     eink_ctl = BIT_SMPS;
