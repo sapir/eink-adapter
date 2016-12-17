@@ -5,6 +5,7 @@
 #include "esp/spi.h"
 #include "wemos_d1_mini.h"
 #include "eink.h"
+#include "waveform.h"
 
 
 // SPI used for shift register
@@ -42,58 +43,11 @@ static uint16_t eink_ctl;
 static uint8_t eink_data_byte;
 
 
-enum WAVEFORM {
-    WF_W2W,
-    WF_W2B,
-    WF_B2W,
-    WF_B2B,
-
-    NUM_WAVEFORMS,
-};
-
-enum PIXEL_VALUE {
-    PV_NEUTRAL = 0,
-    PV_BLACK, // +15V
-    PV_WHITE, // -15V
-    PV_HIZ,
-};
-
 // pixel values in a byte
 #define PVS_PER_IO_BYTE 4
 
 #define QUAD_PIXEL_VALUE(val) \
     ((val) | ((val)<<2) | ((val)<<4) | ((val)<<6))
-
-
-// TODO: unknown->white, unknown->black?
-// TODO: does the old pixel value really matter?
-
-struct waveform_stage {
-    uint32_t ckv_high_delay;
-    uint32_t ckv_low_delay;
-    enum PIXEL_VALUE values[NUM_WAVEFORMS];
-};
-
-static const struct waveform_stage refresh_waveforms[] = {
-//      (ns)   (ns)     (unused)     W->B        B->W       (unused)
-    {  60*10, 60*40, { PV_NEUTRAL, PV_BLACK,  PV_WHITE,   PV_NEUTRAL } },
-    {  60*60, 60*40, { PV_NEUTRAL, PV_WHITE,  PV_BLACK,   PV_NEUTRAL } },
-    {  60*50, 60*40, { PV_NEUTRAL, PV_BLACK,  PV_WHITE,   PV_NEUTRAL } },
-
-    // null stage to signify end of waveform
-    {  0, 0, {} },
-};
-
-static const struct waveform_stage normal_waveforms[] = {
-//      (ns)   (ns)      W->W        W->B        B->W        B->B
-    {  60*20, 60*40, { PV_BLACK,   PV_HIZ,     PV_HIZ,     PV_WHITE,   } },
-    {  60*40, 60*40, { PV_BLACK,   PV_BLACK,   PV_WHITE,   PV_WHITE,   } },
-    {  60*60, 60*40, { PV_WHITE,   PV_WHITE,   PV_BLACK,   PV_BLACK,   } },
-    {  60*20, 60*40, { PV_HIZ,     PV_BLACK,   PV_WHITE,   PV_HIZ,     } },
-
-    // null stage to signify end of waveform
-    {  0, 0, {} },
-};
 
 
 static void delay_ms(uint32_t ms)
@@ -301,7 +255,7 @@ static void vscan_stop(void)
 
 // do one stage of updating old row -> new_row
 static void do_row_update_stage(int x0, int x1,
-    uint8_t *old_row, uint8_t *new_row, const struct waveform_stage *cur_stage)
+    uint8_t *old_row, uint8_t *new_row, int wf_stage)
 {
     hscan_start();
 
@@ -316,14 +270,8 @@ static void do_row_update_stage(int x0, int x1,
             if (x0 <= xi && xi < x1) {
                 pixel_t old_pixel = get_row_pixel(old_row, xi - x0);
                 pixel_t new_pixel = get_row_pixel(new_row, xi - x0);
-
-                enum WAVEFORM wf_idx =
-                    (old_pixel == WHITE && new_pixel == WHITE) ? WF_W2W
-                    : (old_pixel == BLACK && new_pixel == WHITE) ? WF_B2W
-                    : (old_pixel == WHITE && new_pixel == BLACK) ? WF_W2B
-                    : WF_B2B;
-
-                pixel_val = cur_stage->values[wf_idx];
+                pixel_val = get_update_waveform_value(wf_stage,
+                    old_pixel, new_pixel);
             } else {
                 pixel_val = PV_NEUTRAL;
             }
@@ -343,14 +291,19 @@ bool eink_update(get_rows_cb_t get_rows_cb, void *cb_arg,
 {
     bool stopped = false;
 
-    const struct waveform_stage *waveforms = normal_waveforms;
-
     int y;
     uint8_t old_row[MAX_BITMAP_ROW_SIZE] = {};
     uint8_t new_row[MAX_BITMAP_ROW_SIZE] = {};
 
-    for (int wf_stage = 0; waveforms[wf_stage].ckv_high_delay > 0 && !stopped; ++wf_stage) {
-        const struct waveform_stage *cur_stage = &waveforms[wf_stage];
+    uint32_t ckv_high_delay_ns;
+    uint32_t ckv_low_delay_ns;
+    // real stop condition is after get_update_waveform_timings
+    for (int wf_stage = 0; !stopped; ++wf_stage) {
+        get_update_waveform_timings(wf_stage,
+            &ckv_high_delay_ns, &ckv_low_delay_ns);
+        if (0 == ckv_high_delay_ns) {
+            break;
+        }
 
         vscan_start();
 
@@ -369,9 +322,9 @@ bool eink_update(get_rows_cb_t get_rows_cb, void *cb_arg,
                 break;
             }
 
-            do_row_update_stage(x0, x1, old_row, new_row, cur_stage);
+            do_row_update_stage(x0, x1, old_row, new_row, wf_stage);
 
-            vscan_write(cur_stage->ckv_high_delay, cur_stage->ckv_low_delay);
+            vscan_write(ckv_high_delay_ns, ckv_low_delay_ns);
         }
 
         if (y < SCREEN_HEIGHT) {
@@ -397,19 +350,21 @@ bool eink_full_update(get_rows_cb_t get_rows_cb, void *cb_arg)
 
 void eink_refresh(pixel_t pixel)
 {
-    enum WAVEFORM wf_idx =
-        (pixel == WHITE) ? WF_B2W : WF_W2B;
-
-    const struct waveform_stage *waveforms = refresh_waveforms;
-
-    for (int wf_stage = 0; waveforms[wf_stage].ckv_high_delay > 0; ++wf_stage) {
-        const struct waveform_stage *cur_stage = &waveforms[wf_stage];
+    uint32_t ckv_high_delay_ns;
+    uint32_t ckv_low_delay_ns;
+    // stop condition is after get_update_waveform_timings
+    for (int wf_stage = 0; ; ++wf_stage) {
+        get_refresh_waveform_timings(wf_stage,
+            &ckv_high_delay_ns, &ckv_low_delay_ns);
+        if (0 == ckv_high_delay_ns) {
+            break;
+        }
 
         vscan_start();
 
         for (int y = 0; y < SCREEN_HEIGHT; ++y) {
-            hscan_solid_row(cur_stage->values[wf_idx]);
-            vscan_write(cur_stage->ckv_high_delay, cur_stage->ckv_low_delay);
+            hscan_solid_row(get_refresh_waveform_value(wf_stage, pixel));
+            vscan_write(ckv_high_delay_ns, ckv_low_delay_ns);
         }
 
         vscan_stop();

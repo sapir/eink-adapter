@@ -2,6 +2,9 @@
 #define __EINK_H__
 
 
+#include <c_types.h>
+
+
 #define SCREEN_HEIGHT 600
 #define SCREEN_WIDTH  800
 
