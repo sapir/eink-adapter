@@ -26,8 +26,8 @@
 #define SCREEN_BITMAP_HEIGHT 600
 #define SCREEN_BITMAP_X_OFS 0
 #define SCREEN_BITMAP_Y_OFS 0
-#define CHUNK_WIDTH 205
-#define CHUNK_HEIGHT 205
+#define CHUNK_WIDTH 105
+#define CHUNK_HEIGHT 105
 #define CHUNK_OVERLAP 5
 
 static uint8_t old_chunk[CHUNK_HEIGHT][CHUNK_WIDTH / PIXELS_PER_BYTE];
@@ -64,7 +64,7 @@ void handle_conn(int client_sock)
             int h = SCREEN_BITMAP_HEIGHT - y;
             if (h > CHUNK_HEIGHT) h = CHUNK_HEIGHT;
 
-            int byte_w = (w+7)/8;
+            int byte_w = (w+PIXELS_PER_BYTE-1)/PIXELS_PER_BYTE;
 
             if (!(sendall(client_sock, (void*)&x, sizeof(x))
                 && sendall(client_sock, (void*)&y, sizeof(y))

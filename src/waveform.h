@@ -24,7 +24,7 @@ void get_refresh_waveform_timings(int stage,
     uint32_t *ckv_high_delay_ns, uint32_t *ckv_low_delay_ns);
 
 // get value at given stage of refresh waveform that clears everything to the
-// given pixel.
+// given pixel. (this only works for full white/black)
 enum PIXEL_VALUE get_refresh_waveform_value(int stage, pixel_t pixel);
 
 

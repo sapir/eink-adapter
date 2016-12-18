@@ -20,9 +20,9 @@ void eink_power_on(void);
 void eink_power_off(void);
 
 typedef int pixel_t;
-#define PIXEL_BIT_SIZE 1
+#define PIXEL_BIT_SIZE 4
 #define WHITE 0
-#define BLACK 1
+#define BLACK 15
 
 
 #define PIXEL_BITMASK ((1<<PIXEL_BIT_SIZE) - 1)
@@ -60,6 +60,7 @@ bool eink_update(get_rows_cb_t get_rows_cb, void *cb_arg,
 // returns true if drawing was completed
 bool eink_full_update(get_rows_cb_t get_rows_cb, void *cb_arg);
 
+// note this only works for full white/black
 void eink_refresh(pixel_t pixel);
 
 
