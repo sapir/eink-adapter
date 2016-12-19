@@ -12,12 +12,12 @@ void get_refresh_waveform_timings(int stage,
     }
 
     switch (stage) {
-    case 0: *ckv_high_delay_ns = 60*20; break;
-    case 1: *ckv_high_delay_ns = 60*120; break;
-    case 2: *ckv_high_delay_ns = 60*100; break;
+    case 0: *ckv_high_delay_ns = 60*80; break;
+    case 1: *ckv_high_delay_ns = 60*480; break;
+    case 2: *ckv_high_delay_ns = 60*400; break;
     }
 
-    *ckv_low_delay_ns = 60*40;
+    *ckv_low_delay_ns = 60*80;
 }
 
 enum PIXEL_VALUE get_refresh_waveform_value(int stage, pixel_t pixel)
