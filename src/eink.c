@@ -3,6 +3,7 @@
 #include <string.h>
 #include "esp/gpio.h"
 #include "esp/spi.h"
+#include "esp/interrupts.h"
 #include "wemos_d1_mini.h"
 #include "eink.h"
 #include "waveform.h"
@@ -216,11 +217,16 @@ static void vscan_write(uint32_t ckv_high_delay, uint32_t ckv_low_delay)
     uint32_t high_steps = (ckv_high_delay + 24) / 25;
     uint32_t low_steps = (ckv_low_delay + 24) / 25;
 
+    // don't let interrupts affect timing
+    uint32_t old_interrupts = _xt_disable_interrupts();
+
     high(BIT_OE|BIT_CKV);
     delay_25ns_steps(high_steps);
     low(BIT_CKV);
     delay_25ns_steps(low_steps);
     low(BIT_OE);
+
+    _xt_restore_interrupts(old_interrupts);
 
     hclk(2);
 }
