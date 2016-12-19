@@ -51,6 +51,10 @@ static uint8_t eink_data_byte;
     ((val) | ((val)<<2) | ((val)<<4) | ((val)<<6))
 
 
+// delay used for vscan_write when writing clear rows
+#define CLEAR_WRITE_TIME_NS     5000
+
+
 static void delay_ms(uint32_t ms)
 {
     for (int i = 0; i < ms; ++i) {
@@ -248,7 +252,7 @@ static void vscan_start(void)
 static void vscan_stop(void)
 {
     hscan_solid_row(PV_NEUTRAL);
-    vscan_write(100, 100);
+    vscan_write(CLEAR_WRITE_TIME_NS, CLEAR_WRITE_TIME_NS);
 
     delay_us(1);
     low(BIT_CKV|BIT_OE);
@@ -321,7 +325,7 @@ bool eink_update(get_rows_cb_t get_rows_cb, void *cb_arg,
         if (y < y0) {
             hscan_solid_row(PV_NEUTRAL);
             for (; y < y0; ++y) {
-                vscan_write(100, 100);
+                vscan_write(CLEAR_WRITE_TIME_NS, CLEAR_WRITE_TIME_NS);
             }
         }
 
@@ -338,10 +342,9 @@ bool eink_update(get_rows_cb_t get_rows_cb, void *cb_arg,
         }
 
         if (y < SCREEN_HEIGHT) {
-            // clean output
             hscan_solid_row(PV_NEUTRAL);
             for (; y < SCREEN_HEIGHT; ++y) {
-                vscan_write(100, 100);
+                vscan_write(CLEAR_WRITE_TIME_NS, CLEAR_WRITE_TIME_NS);
             }
         }
 
