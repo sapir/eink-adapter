@@ -22,7 +22,7 @@ void get_refresh_waveform_timings(int stage,
     }
 
     *ckv_low_delay_ns = 60*80;
-    *stage_delay_us = 0;
+    *stage_delay_us = 250000;
 }
 
 enum PIXEL_VALUE get_refresh_waveform_value(int stage, pixel_t pixel)
