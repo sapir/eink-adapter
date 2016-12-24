@@ -330,10 +330,11 @@ bool eink_update(get_rows_cb_t get_rows_cb, void *cb_arg,
 
     uint32_t ckv_high_delay_ns;
     uint32_t ckv_low_delay_ns;
+    uint32_t stage_delay_us;
     // real stop condition is after get_update_waveform_timings
     for (int wf_stage = 0; !stopped; ++wf_stage) {
         get_update_waveform_timings(wf_stage,
-            &ckv_high_delay_ns, &ckv_low_delay_ns);
+            &ckv_high_delay_ns, &ckv_low_delay_ns, &stage_delay_us);
         if (0 == ckv_high_delay_ns) {
             break;
         }
@@ -369,6 +370,8 @@ bool eink_update(get_rows_cb_t get_rows_cb, void *cb_arg,
         }
 
         vscan_stop();
+
+        delay_us(stage_delay_us);
     }
 
     return stopped;
@@ -383,10 +386,11 @@ void eink_refresh(pixel_t pixel)
 {
     uint32_t ckv_high_delay_ns;
     uint32_t ckv_low_delay_ns;
+    uint32_t stage_delay_us;
     // stop condition is after get_update_waveform_timings
     for (int wf_stage = 0; ; ++wf_stage) {
         get_refresh_waveform_timings(wf_stage,
-            &ckv_high_delay_ns, &ckv_low_delay_ns);
+            &ckv_high_delay_ns, &ckv_low_delay_ns, &stage_delay_us);
         if (0 == ckv_high_delay_ns) {
             break;
         }
@@ -400,6 +404,8 @@ void eink_refresh(pixel_t pixel)
         }
 
         vscan_stop();
+
+        delay_us(stage_delay_us);
     }
 }
 

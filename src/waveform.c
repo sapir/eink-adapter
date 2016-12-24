@@ -3,11 +3,13 @@
 
 
 void get_refresh_waveform_timings(int stage,
-    uint32_t *ckv_high_delay_ns, uint32_t *ckv_low_delay_ns)
+    uint32_t *ckv_high_delay_ns, uint32_t *ckv_low_delay_ns,
+    uint32_t *stage_delay_us)
 {
     if (stage < 0 || stage >= 3) {
         *ckv_high_delay_ns = 0;
         *ckv_low_delay_ns = 0;
+        *stage_delay_us = 0;
         return;
     }
 
@@ -18,6 +20,7 @@ void get_refresh_waveform_timings(int stage,
     }
 
     *ckv_low_delay_ns = 60*80;
+    *stage_delay_us = 0;
 }
 
 enum PIXEL_VALUE get_refresh_waveform_value(int stage, pixel_t pixel)
@@ -31,16 +34,19 @@ enum PIXEL_VALUE get_refresh_waveform_value(int stage, pixel_t pixel)
 
 
 void get_update_waveform_timings(int stage,
-    uint32_t *ckv_high_delay_ns, uint32_t *ckv_low_delay_ns)
+    uint32_t *ckv_high_delay_ns, uint32_t *ckv_low_delay_ns,
+    uint32_t *stage_delay_us)
 {
     if (stage < 0 || stage >= 29) {
         *ckv_high_delay_ns = 0;
         *ckv_low_delay_ns = 0;
+        *stage_delay_us = 0;
         return;
     }
 
     *ckv_high_delay_ns = 60*15;
     *ckv_low_delay_ns = 60*40;
+    *stage_delay_us = 0;
 }
 
 enum PIXEL_VALUE get_update_waveform_value(int stage,
