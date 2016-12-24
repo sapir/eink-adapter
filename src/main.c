@@ -12,6 +12,7 @@
 #include "missing_api.h"
 #include "skall.h"
 #include "private_ssid_config.h"
+#include "waveform.h"
 
 
 #define LISTEN_PORT 3124
@@ -148,8 +149,30 @@ static bool connect_to_wifi(struct ip_info *info_ptr)
     return true;
 }
 
+void print_waveform_table(void)
+{
+    printf("HIGH  LOW   STGE  W-0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15-B\n");
+    for (int wf_stage = 0; ; ++wf_stage) {
+        uint32_t ckv_high_delay_ns;
+        uint32_t ckv_low_delay_ns;
+        uint32_t stage_delay_us;
+        get_update_waveform_timings(wf_stage,
+            &ckv_high_delay_ns, &ckv_low_delay_ns, &stage_delay_us);
+        if (!ckv_high_delay_ns)
+            break;
+        printf("%5u %5u %5u ", ckv_high_delay_ns, ckv_low_delay_ns, stage_delay_us);
+        for (int i = 0; i < 16; ++i) {
+            enum PIXEL_VALUE pv = get_update_waveform_value(wf_stage, WHITE, i);
+            printf("  %c", (pv == PV_WHITE ? 'W' : (pv == PV_BLACK ? 'B' : '-')));
+        }
+        printf("\n");
+    }
+}
+
 void main_thread(void *arg)
 {
+    print_waveform_table();
+
     printf("free heap size: %u\n", sdk_system_get_free_heap_size());
 
     struct ip_info ip_config;
