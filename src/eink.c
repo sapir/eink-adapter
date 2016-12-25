@@ -70,8 +70,9 @@ static void delay_us(uint32_t us)
     sdk_os_delay_us(us % 1000);
 }
 
-// TODO: only good for 50ns+, and ignores function call time
-static inline void delay_25ns_steps(int steps)
+// TODO: only good for 50ns+
+// inlined with always_inline to ensure no function call overhead
+static __attribute__((always_inline)) inline void delay_25ns_steps(int steps)
 {
     // at 80MHz, each cycle is 12.5ns, so 2 cycles are 25ns (1 step).
     // TODO: this naively assumes that each instruction is 1 cycle.
@@ -218,24 +219,40 @@ static void vclk(int n)
     }
 }
 
-// delays in nanoseconds
-static void vscan_write(uint32_t ckv_high_delay, uint32_t ckv_low_delay)
+// helper function with critical timing code for vscan_write
+static void vscan_write_steps(uint32_t high_steps, uint32_t low_steps)
 {
-    uint32_t high_steps = (ckv_high_delay + 24) / 25;
-    uint32_t low_steps = (ckv_low_delay + 24) / 25;
-
     // don't let interrupts affect timing
     uint32_t old_interrupts = _xt_disable_interrupts();
 
-    high(BIT_OE|BIT_CKV);
+    // code here needs to be as fast as possible. this is why we call
+    // gpio_write directly, to avoid unnecessary logic by high()/low().
+
+    // high(BIT_OE|BIT_CKV);
+    gpio_write(PIN_OE, 1);
+    gpio_write(PIN_CKV, 1);
     delay_25ns_steps(high_steps);
-    low(BIT_CKV);
+    // low(BIT_CKV);
+    gpio_write(PIN_CKV, 0);
     delay_25ns_steps(low_steps);
-    low(BIT_OE);
+    // low(BIT_OE);
+    gpio_write(PIN_OE, 0);
 
     _xt_restore_interrupts(old_interrupts);
 
+    eink_ctl &= ~(BIT_CKV|BIT_OE);
+
     hclk(2);
+}
+
+// delays in nanoseconds
+static void vscan_write(uint32_t ckv_high_delay, uint32_t ckv_low_delay)
+{
+    // vscan_write_steps() is a separate function to prevent gcc from moving
+    // division calculations into the time critical section
+    const uint32_t high_steps = (ckv_high_delay + 24) / 25;
+    const uint32_t low_steps = (ckv_low_delay + 24) / 25;
+    vscan_write_steps(high_steps, low_steps);
 }
 
 
