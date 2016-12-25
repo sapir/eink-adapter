@@ -175,6 +175,8 @@ static void hclk(int n)
 
 static void hscan_start(void)
 {
+    hclk(2);
+
     high(BIT_OE);
     low(BIT_SPH);
 }
@@ -241,8 +243,6 @@ static void vscan_write_steps(uint32_t high_steps, uint32_t low_steps)
     _xt_restore_interrupts(old_interrupts);
 
     eink_ctl &= ~(BIT_CKV|BIT_OE);
-
-    hclk(2);
 }
 
 // delays in nanoseconds
