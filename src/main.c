@@ -150,6 +150,8 @@ static bool connect_to_wifi(struct ip_info *info_ptr)
 
 void main_thread(void *arg)
 {
+    printf("free heap size: %u\n", sdk_system_get_free_heap_size());
+
     struct ip_info ip_config;
     while (!connect_to_wifi(&ip_config)) {
         printf("couldn't connect!\n");
