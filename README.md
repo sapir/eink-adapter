@@ -2,6 +2,12 @@
 
 See https://hackaday.io/project/7443-e-ink-display-adapter.
 
+This version has grayscale support that depends on some modifications to the
+rev. 2 adapter board. Specifically, CKV must be controlled directly by the
+microcontroller and not through the shift register. So far I have done this by
+breadboarding the shift register and wiring its pins (except CKV) to the
+appropriate pins on the board, then wiring CKV separately.
+
 ### Previous work and licensing
 
 This is heavily based on previous work:
