@@ -362,8 +362,9 @@ void eink_refresh(pixel_t pixel)
 
         vscan_start();
 
-        for (int y = 0; y < SCREEN_HEIGHT; ++y) {
-            hscan_solid_row(get_refresh_waveform_value(wf_stage, pixel));
+        hscan_solid_row(get_refresh_waveform_value(wf_stage, pixel));
+        // there seem to be extra rows visible, so +10
+        for (int y = 0; y < SCREEN_HEIGHT + 10; ++y) {
             vscan_write(ckv_high_delay_ns, ckv_low_delay_ns);
         }
 
