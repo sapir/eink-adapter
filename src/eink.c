@@ -250,6 +250,9 @@ static void vscan_stop(void)
     high(BIT_CKV);
     delay_us(430);
     low(BIT_CKV);
+    delay_us(1);
+    low(BIT_GMODE);
+    delay_us(1);
 }
 
 
