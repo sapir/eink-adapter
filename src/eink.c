@@ -184,6 +184,11 @@ static void hscan_stop(void)
 {
     high(BIT_SPH);
     hclk(2);
+
+    high(BIT_LE);
+    hclk(2);
+    low(BIT_LE);
+    hclk(2);
 }
 
 static void hscan_solid_row(int pixel_val)
@@ -208,15 +213,10 @@ static void vclk(int n)
 // delays in nanoseconds
 static void vscan_write(uint32_t ckv_high_delay, uint32_t ckv_low_delay)
 {
-    high(BIT_LE);
-    hclk(2);
-    low(BIT_LE);
-    hclk(2);
-
     uint32_t high_steps = (ckv_high_delay + 24) / 25;
     uint32_t low_steps = (ckv_low_delay + 24) / 25;
 
-    high(BIT_CKV);
+    high(BIT_OE|BIT_CKV);
     delay_25ns_steps(high_steps);
     low(BIT_CKV);
     delay_25ns_steps(low_steps);
