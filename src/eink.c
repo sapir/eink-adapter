@@ -310,8 +310,9 @@ bool eink_update(get_rows_cb_t get_rows_cb, void *cb_arg,
         y = 0;
 
         if (y < y0) {
+            hscan_solid_row(PV_NEUTRAL);
             for (; y < y0; ++y) {
-                vclk(1);
+                vscan_write(100, 100);
             }
         }
 
@@ -330,11 +331,9 @@ bool eink_update(get_rows_cb_t get_rows_cb, void *cb_arg,
         if (y < SCREEN_HEIGHT) {
             // clean output
             hscan_solid_row(PV_NEUTRAL);
-            vscan_write(100, 100);
-            ++y;
-
-            // don't bother vclking to the end of the screen, just
-            // end the scan
+            for (; y < SCREEN_HEIGHT; ++y) {
+                vscan_write(100, 100);
+            }
         }
 
         vscan_stop();
