@@ -99,7 +99,8 @@ void handle_conn(int client_sock)
                 .byte_w = byte_w,
             };
 
-            eink_update(get_rows_from_chunks, &cp,
+            eink_update(&update_waveform,
+                get_rows_from_chunks, &cp,
                 SCREEN_BITMAP_X_OFS + x,
                 SCREEN_BITMAP_Y_OFS + y,
                 SCREEN_BITMAP_X_OFS + x + w,
@@ -149,20 +150,19 @@ static bool connect_to_wifi(struct ip_info *info_ptr)
     return true;
 }
 
-void print_waveform_table(void)
+void print_waveform_table(struct update_waveform *wf)
 {
     printf("HIGH  LOW   STGE  W-0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15-B\n");
-    for (int wf_stage = 0; ; ++wf_stage) {
+    for (int wf_stage = 0; wf_stage < wf->num_stages; ++wf_stage) {
         uint32_t ckv_high_delay_ns;
         uint32_t ckv_low_delay_ns;
         uint32_t stage_delay_us;
-        get_update_waveform_timings(wf_stage,
+        wf->get_timings_cb(wf_stage,
             &ckv_high_delay_ns, &ckv_low_delay_ns, &stage_delay_us);
-        if (!ckv_high_delay_ns)
-            break;
         printf("%5u %5u %5u ", ckv_high_delay_ns, ckv_low_delay_ns, stage_delay_us);
+
         for (int i = 0; i < 16; ++i) {
-            enum PIXEL_VALUE pv = get_update_waveform_value(wf_stage, WHITE, i);
+            enum PIXEL_VALUE pv = wf->get_value_cb(wf_stage, WHITE, i);
             printf("  %c", (pv == PV_WHITE ? 'W' : (pv == PV_BLACK ? 'B' : '-')));
         }
         printf("\n");
@@ -171,7 +171,7 @@ void print_waveform_table(void)
 
 void main_thread(void *arg)
 {
-    print_waveform_table();
+    print_waveform_table(&update_waveform);
 
     printf("free heap size: %u\n", sdk_system_get_free_heap_size());
 

@@ -27,7 +27,7 @@ const unsigned char timA[16] =
 #define RESET_TIME_NS           24000
 #define RESET_STAGE             15
 
-void get_update_waveform_timings(int stage,
+static void get_update_waveform_timings(int stage,
     uint32_t *ckv_high_delay_ns, uint32_t *ckv_low_delay_ns,
     uint32_t *stage_delay_us)
 {
@@ -58,7 +58,7 @@ void get_update_waveform_timings(int stage,
     *stage_delay_us = 0;
 }
 
-enum PIXEL_VALUE get_update_waveform_value(int stage,
+static enum PIXEL_VALUE get_update_waveform_value(int stage,
     pixel_t old_pixel, pixel_t new_pixel)
 {
     // TODO: should we also be using old_pixel to generate the waveform?
@@ -94,3 +94,10 @@ enum PIXEL_VALUE get_update_waveform_value(int stage,
 
     return should_write_now ? write_val : PV_NEUTRAL;
 }
+
+
+struct update_waveform update_waveform = {
+    .num_stages = 15+1+15,
+    .get_timings_cb = get_update_waveform_timings,
+    .get_value_cb = get_update_waveform_value,
+};

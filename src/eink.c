@@ -287,8 +287,8 @@ static void vscan_stop(void)
 
 
 // do one stage of updating old row -> new_row
-static void do_row_update_stage(int x0, int x1,
-    uint8_t *old_row, uint8_t *new_row, int wf_stage)
+static void do_row_update_stage(const struct update_waveform *wf,
+    int x0, int x1, uint8_t *old_row, uint8_t *new_row, int wf_stage)
 {
     hscan_start();
 
@@ -303,8 +303,7 @@ static void do_row_update_stage(int x0, int x1,
             if (x0 <= xi && xi < x1) {
                 pixel_t old_pixel = get_row_pixel(old_row, xi - x0);
                 pixel_t new_pixel = get_row_pixel(new_row, xi - x0);
-                pixel_val = get_update_waveform_value(wf_stage,
-                    old_pixel, new_pixel);
+                pixel_val = wf->get_value_cb(wf_stage, old_pixel, new_pixel);
             } else {
                 pixel_val = PV_NEUTRAL;
             }
@@ -319,7 +318,8 @@ static void do_row_update_stage(int x0, int x1,
     hscan_stop();
 }
 
-bool eink_update(get_rows_cb_t get_rows_cb, void *cb_arg,
+bool eink_update(const struct update_waveform *wf,
+    get_rows_cb_t get_rows_cb, void *cb_arg,
     int x0, int y0, int x1, int y1)
 {
     bool stopped = false;
@@ -331,13 +331,9 @@ bool eink_update(get_rows_cb_t get_rows_cb, void *cb_arg,
     uint32_t ckv_high_delay_ns;
     uint32_t ckv_low_delay_ns;
     uint32_t stage_delay_us;
-    // real stop condition is after get_update_waveform_timings
-    for (int wf_stage = 0; !stopped; ++wf_stage) {
-        get_update_waveform_timings(wf_stage,
+    for (int wf_stage = 0; wf_stage < wf->num_stages && !stopped; ++wf_stage) {
+        wf->get_timings_cb(wf_stage,
             &ckv_high_delay_ns, &ckv_low_delay_ns, &stage_delay_us);
-        if (0 == ckv_high_delay_ns) {
-            break;
-        }
 
         vscan_start();
 
@@ -357,7 +353,7 @@ bool eink_update(get_rows_cb_t get_rows_cb, void *cb_arg,
                 break;
             }
 
-            do_row_update_stage(x0, x1, old_row, new_row, wf_stage);
+            do_row_update_stage(wf, x0, x1, old_row, new_row, wf_stage);
 
             vscan_write(ckv_high_delay_ns, ckv_low_delay_ns);
         }
@@ -377,9 +373,11 @@ bool eink_update(get_rows_cb_t get_rows_cb, void *cb_arg,
     return stopped;
 }
 
-bool eink_full_update(get_rows_cb_t get_rows_cb, void *cb_arg)
+bool eink_full_update(const struct update_waveform *wf,
+    get_rows_cb_t get_rows_cb, void *cb_arg)
 {
-    return eink_update(get_rows_cb, cb_arg, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    return eink_update(wf, get_rows_cb, cb_arg,
+        0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 }
 
 void eink_refresh(pixel_t pixel)

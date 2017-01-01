@@ -24,7 +24,6 @@ typedef int pixel_t;
 #define WHITE 0
 #define BLACK 15
 
-
 #define PIXEL_BITMASK ((1<<PIXEL_BIT_SIZE) - 1)
 #define PIXELS_PER_BYTE (8 / PIXEL_BIT_SIZE)
 #define MAX_BITMAP_ROW_SIZE (SCREEN_WIDTH / PIXELS_PER_BYTE)
@@ -44,6 +43,9 @@ static inline void set_row_pixel(uint8_t *row, int x, pixel_t p) {
 }
 
 
+// defined in waveform.h
+struct update_waveform;
+
 // callback that generates both the row to be replaced and the new row to be
 // drawn.
 // output is in bitmap format, 1 bit per pixel, leftmost pixel in MSB.
@@ -54,11 +56,13 @@ typedef bool (*get_rows_cb_t)(void *arg, int y,
 
 // draw from (x0, y0)-(x1, y1)
 // returns true if drawing was completed
-bool eink_update(get_rows_cb_t get_rows_cb, void *cb_arg,
+bool eink_update(const struct update_waveform *wf,
+    get_rows_cb_t get_rows_cb, void *cb_arg,
     int x0, int y0, int x1, int y1);
 
 // returns true if drawing was completed
-bool eink_full_update(get_rows_cb_t get_rows_cb, void *cb_arg);
+bool eink_full_update(const struct update_waveform *wf,
+    get_rows_cb_t get_rows_cb, void *cb_arg);
 
 // note this only works for full white/black
 void eink_refresh(pixel_t pixel);

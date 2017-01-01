@@ -30,14 +30,22 @@ enum PIXEL_VALUE get_refresh_waveform_value(int stage, pixel_t pixel);
 
 
 // like get_refresh_waveform_timings, but for update waveforms
-void get_update_waveform_timings(int stage,
-    uint32_t *ckv_high_delay_ns, uint32_t *ckv_low_delay_ns,
-    uint32_t *stage_delay_us);
+typedef void (*get_timings_cb_t)(int stage, uint32_t *ckv_high_delay_ns,
+    uint32_t *ckv_low_delay_ns, uint32_t *stage_delay_us);
 
 // get value at given stage of update waveform that changes an old_p pixel
 // to new_p.
-enum PIXEL_VALUE get_update_waveform_value(int stage,
-    pixel_t old_pixel, pixel_t new_pixel);
+typedef enum PIXEL_VALUE (*get_value_cb_t)(int stage, pixel_t old_pixel,
+    pixel_t new_pixel);
+
+struct update_waveform {
+    int num_stages;
+    get_timings_cb_t get_timings_cb;
+    get_value_cb_t get_value_cb;
+};
+
+
+extern struct update_waveform update_waveform;
 
 
 #ifdef __cplusplus
