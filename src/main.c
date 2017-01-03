@@ -9,6 +9,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "eink.h"
+#include "skall.h"
 #include "private_ssid_config.h"
 
 
@@ -34,43 +35,6 @@ bool sdk_wifi_station_set_config_current(struct sdk_station_config *config);
 
 static uint8_t old_chunk[CHUNK_HEIGHT][CHUNK_WIDTH / PIXELS_PER_BYTE];
 static uint8_t new_chunk[CHUNK_HEIGHT][CHUNK_WIDTH / PIXELS_PER_BYTE];
-
-
-bool recvall(int client_sock, uint8_t *buf, size_t size)
-{
-    int i = 0;
-    while (i < size) {
-        int bytes_left = size - i;
-
-        int recvd = lwip_recv(client_sock, buf + i, bytes_left, 0);
-        if (recvd <= 0) {
-            printf("got %d, expected %d\n", recvd, bytes_left);
-            return false;
-        }
-
-        i += recvd;
-    }
-
-    return true;
-}
-
-bool sendall(int client_sock, const uint8_t *buf, size_t size)
-{
-    int i = 0;
-    while (i < size) {
-        int bytes_left = size - i;
-
-        int sent = lwip_send(client_sock, buf + i, bytes_left, 0);
-        if (sent <= 0) {
-            printf("sent %d, expected %d\n", sent, bytes_left);
-            return false;
-        }
-
-        i += sent;
-    }
-
-    return true;
-}
 
 
 struct chunk_params {
