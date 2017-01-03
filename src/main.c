@@ -9,13 +9,10 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "eink.h"
+#include "missing_api.h"
 #include "skall.h"
 #include "private_ssid_config.h"
 
-
-// missing from includes
-bool sdk_wifi_set_opmode_current(uint8_t opmode);
-bool sdk_wifi_station_set_config_current(struct sdk_station_config *config);
 
 #define LISTEN_PORT 3124
 
