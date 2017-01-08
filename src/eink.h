@@ -2,6 +2,11 @@
 #define __EINK_H__
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -56,6 +61,11 @@ bool eink_update(get_rows_cb_t get_rows_cb, void *cb_arg,
 bool eink_full_update(get_rows_cb_t get_rows_cb, void *cb_arg);
 
 void eink_refresh(pixel_t pixel);
+
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 
 #endif

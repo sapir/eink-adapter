@@ -2,6 +2,11 @@
 #define __WAVEFORM_H__
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 #include "eink.h"
 
 
@@ -31,6 +36,11 @@ void get_update_waveform_timings(int stage,
 // to new_p.
 enum PIXEL_VALUE get_update_waveform_value(int stage,
     pixel_t old_pixel, pixel_t new_pixel);
+
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 
 #endif
